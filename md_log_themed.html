@@ -1,0 +1,2294 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>MD戦績ログ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<style>
+/* ========================================================
+   テーマ変数
+   ======================================================== */
+
+/* ── ライトテーマ（デフォルト） ── */
+:root {
+  --bg-deep:       #f0f2f8;
+  --bg-card:       #ffffff;
+  --bg-panel:      #f5f7fc;
+  --bg-input:      #eef1f8;
+  --border:        #d0d8ee;
+  --border-glow:   #8a9cc8;
+  --gold:          #9a6e10;
+  --gold-light:    #c49020;
+  --gold-dim:      #b89040;
+  --red:           #c03030;
+  --red-dim:       #e08888;
+  --blue:          #1a6cc0;
+  --blue-dim:      #80aae0;
+  --green:         #1a8040;
+  --green-dim:     #70c090;
+  --text:          #2a3050;
+  --text-dim:      #8090b0;
+  --text-bright:   #101830;
+  --win:           #c03030;
+  --loss:          #1a6cc0;
+  --draw:          #707080;
+  --glow-gold:     0 0 12px rgba(154,110,16,0.3);
+  --glow-red:      0 0 12px rgba(192,48,48,0.3);
+  --glow-blue:     0 0 12px rgba(26,108,192,0.25);
+  --header-bg:     linear-gradient(135deg, #dde3f5 0%, #eef1fa 50%, #dde3f5 100%);
+  --header-border: #b8c4e0;
+  --thead-bg:      linear-gradient(90deg, #e8ecf8, #f0f3fc);
+  --row-hover:     rgba(154,110,16,0.05);
+  --shadow-card:   0 2px 12px rgba(0,0,0,0.08);
+}
+
+/* ── ダークテーマ ── */
+[data-theme="dark"] {
+  --bg-deep:       #0a0c14;
+  --bg-card:       #111522;
+  --bg-panel:      #161c2e;
+  --bg-input:      #1a2035;
+  --border:        #2a3556;
+  --border-glow:   #4a6fa5;
+  --gold:          #c9a84c;
+  --gold-light:    #f0d080;
+  --gold-dim:      #7a6030;
+  --red:           #e05050;
+  --red-dim:       #6b2020;
+  --blue:          #4a9eff;
+  --blue-dim:      #1a3a6b;
+  --green:         #3ecf6e;
+  --green-dim:     #1a4a30;
+  --text:          #c8d4f0;
+  --text-dim:      #5a6a90;
+  --text-bright:   #eef4ff;
+  --win:           #e05050;
+  --loss:          #4a9eff;
+  --draw:          #888;
+  --glow-gold:     0 0 12px rgba(201,168,76,0.5);
+  --glow-red:      0 0 12px rgba(224,80,80,0.5);
+  --glow-blue:     0 0 12px rgba(74,158,255,0.4);
+  --header-bg:     linear-gradient(135deg, #0d1020 0%, #1a1a35 50%, #0d1020 100%);
+  --header-border: #7a6030;
+  --thead-bg:      linear-gradient(90deg, #1a2035, #141c30);
+  --row-hover:     rgba(201,168,76,0.04);
+  --shadow-card:   none;
+}
+
+/* ========================================================
+   基本リセット & ボディ
+   ======================================================== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg-deep);
+  color: var(--text);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* ── テーマ切り替えボタン ── */
+.theme-toggle-btn {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: 'Noto Sans JP', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+  z-index: 10;
+}
+.theme-toggle-btn:hover {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+.theme-toggle-btn .icon { font-size: 14px; }
+
+/* ── ヘッダー ── */
+.app-header {
+  background: var(--header-bg);
+  border-bottom: 2px solid var(--header-border);
+  padding: 16px 20px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.3s, border-color 0.3s;
+}
+.app-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 20px,
+    rgba(154,110,16,0.04) 20px,
+    rgba(154,110,16,0.04) 40px
+  );
+}
+[data-theme="dark"] .app-header::before {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 20px,
+    rgba(201,168,76,0.03) 20px,
+    rgba(201,168,76,0.03) 40px
+  );
+}
+.app-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(16px, 4vw, 26px);
+  color: var(--gold);
+  text-shadow: var(--glow-gold);
+  letter-spacing: 2px;
+  position: relative;
+}
+.app-title span { color: var(--gold-light); }
+.app-subtitle {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 4px;
+  margin-top: 4px;
+  position: relative;
+}
+
+/* ── レイアウト ── */
+.app-body {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px 12px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── パネル共通 ── */
+.panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+.panel-header {
+  background: linear-gradient(90deg, rgba(154,110,16,0.1) 0%, transparent 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: background 0.3s;
+}
+[data-theme="dark"] .panel-header {
+  background: linear-gradient(90deg, rgba(201,168,76,0.15) 0%, transparent 100%);
+}
+.panel-header .icon { font-size: 14px; }
+.panel-body { padding: 14px 16px; }
+
+/* ── デッキ管理 ── */
+.deck-input-row {
+  display: flex;
+  gap: 8px;
+}
+.deck-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  min-height: 26px;
+}
+.chip {
+  background: rgba(154,110,16,0.08);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.chip:hover { background: rgba(154,110,16,0.18); }
+.chip.selected {
+  background: var(--gold);
+  color: #fff;
+  font-weight: 700;
+}
+[data-theme="dark"] .chip { background: rgba(201,168,76,0.12); }
+[data-theme="dark"] .chip:hover { background: rgba(201,168,76,0.25); }
+[data-theme="dark"] .chip.selected { color: var(--bg-deep); }
+
+/* ── 入力フォーム ── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.form-group.full { grid-column: 1 / -1; }
+.form-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+input[type="text"],
+select {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-bright);
+  padding: 10px 12px;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 13px;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.3s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238090b0'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+[data-theme="dark"] select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a6a90'/%3E%3C/svg%3E");
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--gold-dim);
+  box-shadow: 0 0 0 2px rgba(154,110,16,0.12);
+}
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus {
+  box-shadow: 0 0 0 2px rgba(201,168,76,0.15);
+}
+input::placeholder { color: var(--text-dim); }
+
+/* ── ボタン群 ── */
+.btn {
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 700;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(0.97); }
+
+.btn-gold {
+  background: linear-gradient(135deg, #9a6e10, #b88828, #c49020);
+  color: #fff;
+  border: 1px solid var(--gold-dim);
+  box-shadow: 0 2px 8px rgba(154,110,16,0.25);
+}
+[data-theme="dark"] .btn-gold {
+  background: linear-gradient(135deg, #b8902a, #c9a84c, #d4b45a);
+  color: var(--bg-deep);
+  box-shadow: 0 2px 8px rgba(201,168,76,0.3);
+}
+.btn-gold:hover { box-shadow: var(--glow-gold); }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.btn-ghost:hover { border-color: var(--border-glow); color: var(--text); }
+
+.btn-red {
+  background: linear-gradient(135deg, #a01818, #c03030);
+  color: #fff;
+  border: 1px solid var(--red-dim);
+  box-shadow: 0 2px 8px rgba(192,48,48,0.2);
+}
+[data-theme="dark"] .btn-red {
+  background: linear-gradient(135deg, #8b1a1a, #c03030);
+  box-shadow: 0 2px 8px rgba(224,80,80,0.2);
+}
+.btn-red:hover { box-shadow: var(--glow-red); }
+
+.btn-blue {
+  background: linear-gradient(135deg, #1040a0, #1a6cc0);
+  color: #fff;
+  border: 1px solid var(--blue-dim);
+  box-shadow: 0 2px 8px rgba(26,108,192,0.2);
+}
+[data-theme="dark"] .btn-blue {
+  background: linear-gradient(135deg, #1a3a6b, #2a5a9f);
+  box-shadow: 0 2px 8px rgba(74,158,255,0.2);
+}
+.btn-blue:hover { box-shadow: var(--glow-blue); }
+
+.btn-green {
+  background: linear-gradient(135deg, #155530, #1a8040);
+  color: #fff;
+  border: 1px solid var(--green-dim);
+}
+[data-theme="dark"] .btn-green {
+  background: linear-gradient(135deg, #1a4a30, #28884a);
+}
+.btn-green:hover { filter: brightness(1.12); }
+
+.btn-sm  { font-size: 11px; padding: 6px 12px; }
+.btn-md  { font-size: 13px; padding: 10px 18px; }
+.btn-lg  { font-size: 15px; padding: 14px 24px; border-radius: 8px; }
+.btn-xl  { font-size: 16px; padding: 16px 28px; border-radius: 10px; width: 100%; }
+
+/* ── 先手/後手 & Win/Loss トグル ── */
+.toggle-row { display: flex; gap: 8px; }
+.btn-turn, .btn-result {
+  flex: 1;
+  font-size: 15px;
+  padding: 12px 8px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+.btn-turn.first {
+  background: rgba(154,110,16,0.1);
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+.btn-turn.second {
+  background: rgba(26,108,192,0.1);
+  border-color: var(--blue-dim);
+  color: var(--blue);
+}
+.btn-result.win {
+  background: rgba(192,48,48,0.1);
+  border-color: var(--red-dim);
+  color: var(--red);
+}
+.btn-result.loss {
+  background: rgba(26,108,192,0.1);
+  border-color: var(--blue-dim);
+  color: var(--blue);
+}
+.btn-result.draw {
+  background: rgba(112,112,128,0.1);
+  border-color: #aab;
+  color: #707080;
+}
+[data-theme="dark"] .btn-turn.first { background: rgba(201,168,76,0.15); }
+[data-theme="dark"] .btn-turn.second { background: rgba(74,158,255,0.15); }
+[data-theme="dark"] .btn-result.win { background: rgba(224,80,80,0.15); }
+[data-theme="dark"] .btn-result.loss { background: rgba(74,158,255,0.15); }
+[data-theme="dark"] .btn-result.draw { background: rgba(136,136,136,0.15); border-color: #444; color: #888; }
+
+/* ── 記録ボタン ── */
+.record-btn-wrap { display: flex; gap: 10px; margin-top: 6px; }
+
+/* ── ショートカット ── */
+.shortcut-area {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  transition: background 0.3s;
+}
+.shortcut-title { font-size: 10px; color: var(--text-dim); margin-bottom: 6px; letter-spacing: 1px; }
+.shortcut-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.shortcut-title-row .shortcut-title { margin-bottom: 0; }
+.shortcut-chips { display: flex; flex-wrap: wrap; gap: 5px; min-height: 22px; }
+.sc-chip {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 2px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sc-chip:hover {
+  background: rgba(154,110,16,0.12);
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+[data-theme="dark"] .sc-chip:hover {
+  background: rgba(201,168,76,0.15);
+}
+
+/* ── オプション行 ── */
+.options-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.toggle-chip {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.toggle-chip.active {
+  background: rgba(26,128,64,0.12);
+  border-color: var(--green-dim);
+  color: var(--green);
+}
+[data-theme="dark"] .toggle-chip.active {
+  background: rgba(62,207,110,0.15);
+}
+.zoom-row { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.zoom-label { font-size: 10px; color: var(--text-dim); }
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 70px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--gold);
+  cursor: pointer;
+}
+
+/* ── 対戦ログテーブル ── */
+.table-wrap {
+  overflow-x: auto;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+#zoomTargetWrapper, #zoomTargetWrapper2 {
+  transform-origin: top left;
+  transition: transform 0.1s ease-out;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  color: var(--text);
+}
+thead tr {
+  background: var(--thead-bg);
+  border-bottom: 1px solid var(--border);
+}
+th {
+  padding: 8px 10px;
+  text-align: center;
+  color: var(--gold-dim);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+td {
+  padding: 8px 10px;
+  text-align: center;
+  border-bottom: 1px solid rgba(200,210,230,0.4);
+  white-space: nowrap;
+}
+[data-theme="dark"] td {
+  border-bottom: 1px solid rgba(42,53,86,0.5);
+}
+tbody tr:hover { background: var(--row-hover); }
+tbody tr:last-child td { border-bottom: none; }
+
+.result-win  { color: var(--win);  font-weight: 700; }
+.result-loss { color: var(--loss); font-weight: 700; }
+.result-draw { color: var(--draw); }
+.td-left { text-align: left; }
+
+.edit-btn {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.edit-btn:hover { border-color: var(--border-glow); color: var(--text); }
+.edit-btn.edit  { color: var(--gold); border-color: var(--gold-dim); }
+.edit-btn.edit:hover { background: rgba(154,110,16,0.12); border-color: var(--gold); }
+.edit-btn.del   { color: var(--loss); border-color: rgba(192,48,48,0.3); }
+.edit-btn.del:hover  { background: rgba(192,48,48,0.1); border-color: var(--loss); }
+.action-cell { display: flex; gap: 4px; justify-content: center; white-space: nowrap; }
+
+/* ── 編集モーダル ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+.modal-box {
+  background: var(--bg-card);
+  border: 1px solid var(--gold-dim);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 20px;
+  transform: translateY(16px);
+  transition: transform 0.2s;
+}
+.modal-overlay.open .modal-box { transform: translateY(0); }
+.modal-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 13px;
+  color: var(--gold);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.modal-field { display: flex; flex-direction: column; gap: 4px; }
+.modal-field.full { grid-column: 1 / -1; }
+.modal-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.modal-field input,
+.modal-field select { width: 100%; box-sizing: border-box; }
+.modal-toggle-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.modal-toggle-row button {
+  flex: 1;
+  padding: 6px 4px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-dim);
+  transition: all 0.15s;
+  min-width: 50px;
+}
+.modal-toggle-row button.active-first  { background: rgba(201,168,76,0.15); border-color: var(--gold-dim); color: var(--gold); }
+.modal-toggle-row button.active-second { background: rgba(74,158,255,0.15); border-color: var(--blue-dim); color: var(--blue); }
+.modal-toggle-row button.active-win    { background: rgba(192,48,48,0.12); border-color: var(--red-dim); color: var(--win); }
+.modal-toggle-row button.active-loss   { background: rgba(26,108,192,0.12); border-color: var(--blue-dim); color: var(--loss); }
+.modal-toggle-row button.active-draw   { background: rgba(112,112,128,0.12); border-color: #aab; color: #707080; }
+.modal-sub-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; min-height: 22px; }
+.modal-sub-input-row { display: flex; gap: 6px; }
+.modal-sub-input-row input { flex: 1; }
+.modal-footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── 統計エリア ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+.stat-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 10px;
+  text-align: center;
+  transition: background 0.3s;
+}
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-bright);
+  line-height: 1.2;
+}
+.stat-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 2px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.stat-card.win  .stat-value { color: var(--win); }
+.stat-card.loss .stat-value { color: var(--loss); }
+.stat-card.draw .stat-value { color: var(--draw); }
+.stat-card.rate .stat-value { color: var(--gold); }
+
+/* ── チャートラッパー ── */
+.chart-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+/* ── 空状態 ── */
+.empty-state {
+  text-align: center;
+  padding: 32px 20px;
+  color: var(--text-dim);
+}
+.empty-icon { font-size: 36px; margin-bottom: 8px; opacity: 0.5; }
+.empty-text { font-size: 12px; }
+
+/* ── トースト通知 ── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--bg-card);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+  z-index: 9999;
+  white-space: nowrap;
+}
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* ── セクション区切り ── */
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin: 4px 0;
+}
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── フィルター行 ── */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.filter-row select { flex: 1; min-width: 120px; }
+
+/* ── エクスポートエリア ── */
+.export-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── 相手デッキ：メイン入力 ── */
+.opp-main-row { position: relative; }
+.opp-main-suggest {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0; right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--gold-dim);
+  border-radius: 6px;
+  box-shadow: var(--shadow-card);
+  z-index: 100;
+  max-height: 160px;
+  overflow-y: auto;
+  display: none;
+}
+.opp-main-suggest.open { display: block; }
+.suggest-item {
+  padding: 8px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.12s;
+}
+.suggest-item:hover { background: rgba(154,110,16,0.1); color: var(--gold); }
+[data-theme="dark"] .suggest-item:hover { background: rgba(201,168,76,0.12); }
+
+/* ── サブテーマ入力行 ── */
+.sub-input-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.sub-input-row input { flex: 1; }
+
+/* ── サブテーマタグ ── */
+.sub-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-height: 0;
+}
+.sub-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(74,158,255,0.12);
+  border: 1px solid var(--blue-dim);
+  color: var(--blue);
+  border-radius: 14px;
+  padding: 2px 8px 2px 10px;
+  font-size: 11px;
+}
+[data-theme="dark"] .sub-tag {
+  background: rgba(74,158,255,0.15);
+}
+.sub-tag-del {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--blue);
+  font-size: 12px;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.sub-tag-del:hover { opacity: 1; }
+
+/* ── ログ表示：メイン＋サブ ── */
+.opp-main-text { font-weight: 600; }
+.opp-subs-text {
+  display: block;
+  font-size: 10px;
+  color: var(--blue);
+  opacity: 0.85;
+  margin-top: 1px;
+}
+[data-theme="dark"] .opp-subs-text { color: #4a9eff; }
+
+/* ── ショートカット区切り ── */
+.sc-sep { color: var(--border); margin: 0 2px; font-size: 11px; }
+.sc-chip-full { border-color: var(--blue-dim); color: var(--blue); }
+.sc-chip-full:hover {
+  background: rgba(26,108,192,0.12) !important;
+  border-color: var(--blue) !important;
+  color: var(--blue) !important;
+}
+[data-theme="dark"] .sc-chip-full { color: #4a9eff; }
+
+/* ── 統計ランク絞り込み行 ── */
+.stat-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.stat-rank-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.stat-rank-row select {
+  flex: 1;
+  padding: 6px 28px 6px 10px;
+  font-size: 12px;
+}
+
+/* ── デッキ分布ドーナツ（大） ── */
+.chart-wrap-large {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 8px auto 0;
+}
+.chart-center-label-large {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  line-height: 1.2;
+  cursor: pointer;
+  user-select: none;
+}
+#distCenterClickable:hover .chart-center-rank {
+  color: var(--gold);
+}
+.charts-col-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* ── chart-wrap (旧共通：念のため残す) ── */
+.chart-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 200px;
+}
+.chart-center-label {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -58%);
+  text-align: center;
+  pointer-events: none;
+  line-height: 1.3;
+}
+.chart-center-rank {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-bright);
+  white-space: nowrap;
+}
+.chart-center-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+/* ── 相手デッキテーブル ── */
+.opp-stats-table-wrap { overflow-x: auto; border-radius: 6px; border: 1px solid var(--border); }
+.opp-stats-table-wrap table { table-layout: fixed; width: 100%; min-width: 380px; }
+.opp-stats-table-wrap th:nth-child(1),
+.opp-stats-table-wrap td:nth-child(1) { width: 30%; text-align: left; }
+.opp-stats-table-wrap th:nth-child(2),
+.opp-stats-table-wrap td:nth-child(2) { width: 10%; } /* 対戦数 */
+.opp-stats-table-wrap th:nth-child(3),
+.opp-stats-table-wrap td:nth-child(3) { width: 8%; }  /* 勝ち */
+.opp-stats-table-wrap th:nth-child(4),
+.opp-stats-table-wrap td:nth-child(4) { width: 8%; }  /* 負け */
+.opp-stats-table-wrap th:nth-child(5),
+.opp-stats-table-wrap td:nth-child(5) { width: 10%; } /* 勝率 */
+.opp-stats-table-wrap th:nth-child(6),
+.opp-stats-table-wrap td:nth-child(6) { width: 17%; } /* 先手 */
+.opp-stats-table-wrap th:nth-child(7),
+.opp-stats-table-wrap td:nth-child(7) { width: 17%; } /* 後手 */
+
+/* ゲージセル（先後手勝率用・コンパクト） */
+.turn-gauge-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 2px;
+}
+.turn-gauge-track {
+  flex: 1;
+  height: 5px;
+  background: var(--bg-panel);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  min-width: 24px;
+}
+.turn-gauge-fill {
+  height: 100%;
+  border-radius: 3px;
+}
+.turn-gauge-pct {
+  font-size: 9px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  min-width: 24px;
+  text-align: right;
+}
+.wr-high { color: var(--win);  font-weight: 700; }
+.wr-low  { color: var(--loss); font-weight: 700; }
+.wr-mid  { color: var(--text-dim); }
+
+/* ── 統計タブ ── */
+.stat-mode-tabs {
+  display: flex;
+  gap: 4px;
+}
+.stat-tab {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 10px;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+.stat-tab.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #fff;
+}
+[data-theme="dark"] .stat-tab.active { color: var(--bg-deep); }
+.stat-tab:not(.active):hover {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+/* ── 相手デッキ別統計テーブル ── */
+.opp-stats-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.opp-stats-count {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-weight: 400;
+}
+.opp-stat-bar {
+  display: inline-block;
+  height: 6px;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+.opp-stat-name { font-weight: 600; }
+.opp-stat-sub  { font-size: 10px; color: var(--blue); opacity: 0.85; display: block; }
+.opp-winrate-high { color: var(--win);  font-weight: 700; }
+.opp-winrate-low  { color: var(--loss); font-weight: 700; }
+.opp-winrate-mid  { color: var(--text-dim); }
+
+/* ── デバックパネル ── */
+#debugPanel {
+  border-color: var(--red-dim);
+  animation: debugPulse 2s ease-in-out infinite;
+}
+@keyframes debugPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(224,80,80,0); }
+  50%       { box-shadow: 0 0 8px 2px rgba(224,80,80,0.18); }
+}
+[data-theme="light"] #debugPanel {
+  border-color: #e08888;
+}
+
+/* ── ランク帯カラー ── */
+.rank-master   { color: #c03030; font-weight: 700; }
+.rank-diamond  { color: #1a6cc0; font-weight: 700; }
+.rank-platinum { color: #7a8aaa; font-weight: 600; }
+.rank-gold     { color: var(--gold); font-weight: 600; }
+[data-theme="dark"] .rank-master   { color: #e05050; }
+[data-theme="dark"] .rank-diamond  { color: #4a9eff; }
+[data-theme="dark"] .rank-platinum { color: #aabbd0; }
+[data-theme="dark"] .rank-gold     { color: #c9a84c; }
+
+/* ── レスポンシブ ── */
+@media (max-width: 480px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .form-group.full { grid-column: 1; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .export-row .btn { flex: 1; }
+  .theme-toggle-btn span { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<header class="app-header">
+  <div class="app-title">MD <span>Duel</span> Log</div>
+  <div class="app-subtitle">MASTER DUEL BATTLE RECORD</div>
+  <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">
+    <span class="icon" id="themeIcon">☀️</span>
+    <span id="themeLabel">ライト</span>
+  </button>
+</header>
+
+<!-- メインボディ -->
+<div class="app-body">
+
+  <!-- デッキ管理 -->
+  <div class="panel">
+    <div class="panel-header"><span class="icon">🃏</span>デッキ管理</div>
+    <div class="panel-body">
+      <div class="deck-input-row">
+        <input type="text" id="deckNameInput" placeholder="デッキ名を入力..." maxlength="20"/>
+        <button class="btn btn-gold btn-md" onclick="addDeck()">追加</button>
+      </div>
+      <div class="deck-chips" id="deckChips"></div>
+    </div>
+  </div>
+
+  <!-- 対戦記録フォーム -->
+  <div class="panel">
+    <div class="panel-header"><span class="icon">⚔️</span>対戦記録</div>
+    <div class="panel-body">
+
+      <!-- ショートカット（最上部） -->
+      <div class="shortcut-area" style="margin-bottom:12px;">
+        <div class="shortcut-title-row">
+          <span class="shortcut-title">相手デッキ履歴</span>
+        </div>
+        <div class="shortcut-chips" id="oppHistory"></div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <div class="form-label">使用デッキ</div>
+          <select id="myDeckSelect"><option value="">-- 選択 --</option></select>
+        </div>
+        <div class="form-group">
+          <div class="form-label">相手デッキ（メイン）</div>
+          <div class="opp-main-row">
+            <input type="text" id="oppDeckInput" placeholder="メインテーマ名..." autocomplete="off"/>
+            <div class="opp-main-suggest" id="oppMainSuggest"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="form-label">サブテーマ <span style="font-weight:400;letter-spacing:0;text-transform:none;color:var(--text-dim)">（複数可）</span></div>
+          <div class="sub-input-row">
+            <input type="text" id="oppSubInput" placeholder="サブテーマを追加..." autocomplete="off"/>
+            <button class="btn btn-ghost btn-sm" onclick="addSubTheme()">＋</button>
+          </div>
+          <div class="sub-tags" id="subTags"></div>
+        </div>
+        <div class="form-group">
+          <div class="form-label">ランク帯</div>
+          <select id="rankSelect"></select>
+        </div>
+        <div class="form-group">
+          <div class="form-label">先手 / 後手</div>
+          <div class="toggle-row">
+            <button class="btn-turn first" id="btnFirst" onclick="setTurn('first')">先手</button>
+            <button class="btn-turn second" id="btnSecond" onclick="setTurn('second')">後手</button>
+          </div>
+        </div>
+        <div class="form-group full">
+          <div class="form-label">勝敗</div>
+          <div class="toggle-row">
+            <button class="btn-result win"  id="btnWin"  onclick="setResult('win')">勝</button>
+            <button class="btn-result loss" id="btnLoss" onclick="setResult('loss')">負</button>
+            <button class="btn-result draw" id="btnDraw" onclick="setResult('draw')">分</button>
+          </div>
+        </div>
+        <div class="form-group full">
+          <div class="form-label">メモ</div>
+          <input type="text" id="memoInput" placeholder="メモ（任意）..."/>
+        </div>
+      </div>
+
+      <!-- 記録ボタン -->
+      <div class="record-btn-wrap">
+        <button class="btn btn-gold btn-xl" onclick="recordBattle()">⚔️ 記録する</button>
+        <button class="btn btn-ghost btn-md" onclick="resetForm()" style="min-width:72px;">リセット</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 統計サマリー -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="icon">📊</span>統計
+      <div class="stat-mode-tabs" style="margin-left:auto;">
+        <button class="stat-tab active" id="tabMain"   onclick="setStatMode('main')">メイン集計</button>
+        <button class="stat-tab"        id="tabDetail" onclick="setStatMode('detail')">詳細集計</button>
+      </div>
+    </div>
+    <div class="panel-body">
+
+      <!-- ランク絞り込み -->
+      <div class="stat-rank-row">
+        <span class="stat-rank-label">ランク帯絞り込み</span>
+        <select id="statRankFilter" onchange="updateStats()">
+          <option value="">全ランク（総合）</option>
+        </select>
+      </div>
+
+      <!-- 全体サマリー（共通） -->
+      <div class="stats-grid" id="statsGrid" style="margin-top:10px;">
+        <div class="stat-card"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Total</div></div>
+        <div class="stat-card win"><div class="stat-value" id="statWin">0</div><div class="stat-label">Win</div></div>
+        <div class="stat-card loss"><div class="stat-value" id="statLoss">0</div><div class="stat-label">Loss</div></div>
+        <div class="stat-card draw"><div class="stat-value" id="statDraw">0</div><div class="stat-label">Draw</div></div>
+        <div class="stat-card rate"><div class="stat-value" id="statRate">-</div><div class="stat-label">Win Rate</div></div>
+      </div>
+
+      <!-- デッキ分布ドーナツ -->
+      <div style="margin-top:14px;">
+        <div class="charts-col-label" style="text-align:center;">相手デッキ分布</div>
+        <div class="chart-wrap-large">
+          <canvas id="distChart"></canvas>
+          <div class="chart-center-label-large" id="distCenterClickable" onclick="cycleChartRank()" title="クリックでランク切り替え">
+            <div class="chart-center-rank" id="distCenterRank">全体</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 相手デッキ別テーブル -->
+      <div id="oppStatsWrap" style="margin-top:16px;">
+        <div class="opp-stats-header">
+          <span id="oppStatsLabel">相手デッキ（メイン）別</span>
+          <span id="oppStatsCount" class="opp-stats-count"></span>
+        </div>
+        <div class="opp-stats-table-wrap" style="margin-top:6px;">
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align:left;">相手デッキ</th>
+                <th>対戦数</th>
+                <th>勝ち</th>
+                <th>負け</th>
+                <th>勝率</th>
+                <th>先手</th>
+                <th>後手</th>
+              </tr>
+            </thead>
+            <tbody id="oppStatsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 対戦ログ -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="icon">📋</span>対戦ログ
+      <div class="zoom-row" style="margin-left:auto;">
+        <span class="zoom-label">ズーム</span>
+        <input type="range" id="tableZoom" min="70" max="130" value="100" oninput="applyZoom(this.value)"/>
+      </div>
+    </div>
+    <div class="panel-body" style="padding:0;">
+
+      <!-- フィルター -->
+      <div style="padding:10px 14px; border-bottom:1px solid var(--border);">
+        <div class="filter-row">
+          <select id="filterDeck" onchange="renderLog()"><option value="">全デッキ</option></select>
+          <select id="filterRank" onchange="renderLog()"><option value="">全ランク</option></select>
+          <select id="filterResult" onchange="renderLog()">
+            <option value="">全結果</option>
+            <option value="win">勝</option>
+            <option value="loss">負</option>
+            <option value="draw">分</option>
+          </select>
+          <select id="filterTurn" onchange="renderLog()">
+            <option value="">先後手</option>
+            <option value="first">先手</option>
+            <option value="second">後手</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="clearFilters()">クリア</button>
+        </div>
+      </div>
+
+      <!-- テーブル -->
+      <div class="table-wrap">
+        <div id="zoomTargetWrapper">
+          <table id="logTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>日付</th>
+                <th>使用</th>
+                <th>相手</th>
+                <th>ランク</th>
+                <th>先後</th>
+                <th>結果</th>
+                <th>メモ</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="logTableBody">
+              <tr><td colspan="9"><div class="empty-state"><div class="empty-icon">⚔️</div><div class="empty-text">対戦記録がありません</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- エクスポート -->
+  <div class="panel">
+    <div class="panel-header"><span class="icon">💾</span>データ管理</div>
+    <div class="panel-body">
+      <div class="export-row">
+        <button class="btn btn-blue btn-md" onclick="exportJSON()">📤 JSON保存</button>
+        <button class="btn btn-green btn-md" onclick="importJSON()">📥 JSON読込</button>
+        <button class="btn btn-ghost btn-md" onclick="exportCSV()">CSV出力</button>
+        <button class="btn btn-red btn-md" onclick="clearAll()" style="margin-left:auto;">🗑️ 全消去</button>
+      </div>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="loadJSONFile(event)"/>
+    </div>
+  </div>
+
+</div><!-- /app-body -->
+
+<!-- トースト -->
+<!-- 編集モーダル -->
+<div class="modal-overlay" id="editModalOverlay" onclick="closeEditModal(event)">
+  <div class="modal-box">
+    <div class="modal-title">✏️ 対戦記録を編集</div>
+    <div class="modal-grid">
+
+      <div class="modal-field">
+        <div class="modal-label">使用デッキ</div>
+        <select id="editMyDeck"></select>
+      </div>
+      <div class="modal-field">
+        <div class="modal-label">ランク帯</div>
+        <select id="editRank"></select>
+      </div>
+      <div class="modal-field full">
+        <div class="modal-label">相手デッキ（メイン）</div>
+        <input type="text" id="editOppDeck" placeholder="メインテーマ名..."/>
+      </div>
+      <div class="modal-field full">
+        <div class="modal-label">サブテーマ</div>
+        <div class="modal-sub-input-row">
+          <input type="text" id="editSubInput" placeholder="サブテーマを追加..."/>
+          <button class="btn btn-ghost btn-sm" onclick="editAddSub()">＋</button>
+        </div>
+        <div class="modal-sub-tags" id="editSubTags"></div>
+      </div>
+      <div class="modal-field full">
+        <div class="modal-label">先手 / 後手</div>
+        <div class="modal-toggle-row">
+          <button id="editBtnFirst"  onclick="editSetTurn('first')">先手</button>
+          <button id="editBtnSecond" onclick="editSetTurn('second')">後手</button>
+        </div>
+      </div>
+      <div class="modal-field full">
+        <div class="modal-label">勝敗</div>
+        <div class="modal-toggle-row">
+          <button id="editBtnWin"  onclick="editSetResult('win')">勝</button>
+          <button id="editBtnLoss" onclick="editSetResult('loss')">負</button>
+          <button id="editBtnDraw" onclick="editSetResult('draw')">分</button>
+        </div>
+      </div>
+      <div class="modal-field full">
+        <div class="modal-label">メモ</div>
+        <input type="text" id="editMemo" placeholder="メモ（任意）..."/>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-md" onclick="closeEditModal()">キャンセル</button>
+      <button class="btn btn-gold btn-md" onclick="saveEdit()">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ========================================================
+   ランク帯定義（下位→上位）
+   ======================================================== */
+const RANKS = [
+  'ルーキー1',
+  'ブロンズ5','ブロンズ4','ブロンズ3','ブロンズ2','ブロンズ1',
+  'シルバー5','シルバー4','シルバー3','シルバー2','シルバー1',
+  'ゴールド5','ゴールド4','ゴールド3','ゴールド2','ゴールド1',
+  'プラチナ5','プラチナ4','プラチナ3','プラチナ2','プラチナ1',
+  'ダイアモンド5','ダイアモンド4','ダイアモンド3','ダイアモンド2','ダイアモンド1',
+  'マスター5','マスター4','マスター3','マスター2','マスター1'
+];
+const DEFAULT_RANK = 'マスター5';
+
+function populateRankSelects() {
+  // 記録フォーム用：全ランク（逆順）
+  const rs = document.getElementById('rankSelect');
+  rs.innerHTML = '';
+  [...RANKS].reverse().forEach(r => {
+    const o = document.createElement('option');
+    o.value = o.textContent = r;
+    rs.appendChild(o);
+  });
+  rs.value = DEFAULT_RANK;
+  // フィルター・統計は登録済みベースで更新
+  refreshFilterRank();
+}
+
+/* 対戦ログのランクフィルター：実際に登録されたランクのみ表示（RANKS順で上位が上） */
+function refreshFilterRank() {
+  const used   = [...new Set(battles.map(b => b.rank).filter(Boolean))];
+  const sorted = [...RANKS].reverse().filter(r => used.includes(r));
+  const cur    = document.getElementById('filterRank').value;
+  const fr     = document.getElementById('filterRank');
+  fr.innerHTML = '<option value="">全ランク</option>';
+  sorted.forEach(r => {
+    const o = document.createElement('option');
+    o.value = o.textContent = r;
+    fr.appendChild(o);
+  });
+  if (sorted.includes(cur)) fr.value = cur;
+}
+
+/* 統計のランクフィルター：実際に登録されたランクのみ表示 */
+function refreshStatRankFilter() {
+  const used   = [...new Set(battles.map(b => b.rank).filter(Boolean))];
+  const sorted = [...RANKS].reverse().filter(r => used.includes(r));
+  const cur    = document.getElementById('statRankFilter').value;
+  const sel    = document.getElementById('statRankFilter');
+  sel.innerHTML = '<option value="">全ランク（総合）</option>';
+  sorted.forEach(r => {
+    const o = document.createElement('option');
+    o.value = o.textContent = r;
+    sel.appendChild(o);
+  });
+  if (sorted.includes(cur)) sel.value = cur;
+}
+let decks        = JSON.parse(localStorage.getItem('mdlog_decks')   || '[]');
+let battles      = JSON.parse(localStorage.getItem('mdlog_battles') || '[]');
+let selTurn      = null;
+let selResult    = null;
+let selOppSubs   = [];
+let distChart    = null;
+
+/* ========================================================
+   テーマ切り替え
+   ======================================================== */
+let currentTheme = localStorage.getItem('mdlog_theme') || 'light';
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const icon  = document.getElementById('themeIcon');
+  const label = document.getElementById('themeLabel');
+  if (theme === 'dark') {
+    icon.textContent  = '🌙';
+    label.textContent = 'ダーク';
+  } else {
+    icon.textContent  = '☀️';
+    label.textContent = 'ライト';
+  }
+  if (distChart) rebuildChart();
+}
+
+function toggleTheme() {
+  currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+  localStorage.setItem('mdlog_theme', currentTheme);
+  applyTheme(currentTheme);
+}
+
+/* ========================================================
+   デッキ管理
+   ======================================================== */
+function saveDeckLS()    { localStorage.setItem('mdlog_decks',   JSON.stringify(decks)); }
+function saveBattleLS()  { localStorage.setItem('mdlog_battles', JSON.stringify(battles)); }
+
+function addDeck() {
+  const v = document.getElementById('deckNameInput').value.trim();
+  if (!v) return;
+
+  // ── デバックモード ──
+  if (v === 'デバック') {
+    document.getElementById('deckNameInput').value = '';
+    generateDebugData();
+    return;
+  }
+
+  if (decks.includes(v)) { toast('既に登録済みです'); return; }
+  decks.push(v);
+  saveDeckLS();
+  renderDeckChips();
+  populateDeckSelects();
+  document.getElementById('deckNameInput').value = '';
+  toast(`「${v}」を追加しました`);
+}
+
+/* ========================================================
+   デバックデータ生成（管理者機能）
+   ======================================================== */
+function generateDebugData() {
+  const DEBUG_DECKS = ['青眼', '烙印', '粛声', 'スネークアイ', 'ラビュリンス'];
+  const OPP_MAINS   = ['青眼', '烙印', '粛声', 'スネークアイ', 'ラビュリンス', 'ティアラメンツ', 'R-ACE', 'ピュアリィ', '炎王', 'デモンスミス'];
+  const OPP_SUBS_MAP = {
+    '青眼':         [[], ['白石'], ['カオス']],
+    '烙印':         [[], ['スプリンド'], ['デスピア']],
+    '粛声':         [[], ['ロアー']],
+    'スネークアイ': [[], ['炎王'], ['R-ACE']],
+    'ラビュリンス': [[], ['ウェルカム']],
+    'ティアラメンツ': [[], ['シャドール'], ['カレイドハート']],
+    'R-ACE':        [[], ['炎王']],
+    'ピュアリィ':   [[], ['ストリート']],
+    '炎王':         [[], ['スネークアイ'], ['ガルーラ']],
+    'デモンスミス': [[], ['炎王']],
+  };
+  const RESULTS = ['win','win','win','loss','loss','draw']; // 約50%勝率
+  const TURNS   = ['first','second'];
+  // ランク帯：マスター帯中心に分布
+  const RANK_POOL = [
+    'マスター5','マスター5','マスター5','マスター5',
+    'マスター4','マスター4','マスター4',
+    'マスター3','マスター3',
+    'マスター2','マスター1',
+    'ダイアモンド1','プラチナ1'
+  ];
+  const MEMOS = ['', '', '', '', '先攻展開完璧', '手札事故', '誘発通った', '捲り成功', '後手捲り失敗', '相手ワンキル'];
+
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  // デバック用デッキをdecksに追加（未登録のみ）
+  DEBUG_DECKS.forEach(d => { if (!decks.includes(d)) decks.push(d); });
+  saveDeckLS();
+  renderDeckChips();
+  populateDeckSelects();
+
+  // 100戦生成
+  const now = new Date();
+  for (let i = 0; i < 100; i++) {
+    // 日付：過去60日以内でランダム
+    const daysAgo  = Math.floor(Math.random() * 60);
+    const hoursAgo = Math.floor(Math.random() * 24);
+    const minsAgo  = Math.floor(Math.random() * 60);
+    const d = new Date(now.getTime() - (daysAgo * 86400 + hoursAgo * 3600 + minsAgo * 60) * 1000);
+    const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+    const myDeck  = pick(DEBUG_DECKS);
+    const oppMain = pick(OPP_MAINS);
+    const subPool = OPP_SUBS_MAP[oppMain] || [[]];
+    const oppSubs = [...pick(subPool)];
+    const rank    = pick(RANK_POOL);
+    const turn    = pick(TURNS);
+    const result  = pick(RESULTS);
+    const memo    = pick(MEMOS);
+
+    battles.push({
+      id: Date.now() + i,
+      date: dateStr,
+      myDeck,
+      oppDeck: oppMain,
+      oppSubs,
+      rank,
+      turn,
+      result,
+      memo,
+      _debug: true   // デバックフラグ
+    });
+  }
+
+  // 日付昇順で並び替え
+  battles.sort((a, b) => a.id - b.id);
+
+  saveBattleLS();
+  renderLog();
+  updateStats();
+  renderOppHistory();
+
+  // デバックパネルを表示
+  showDebugPanel();
+  toast('🛠 デバックデータ 100戦を生成しました');
+}
+
+/* デバックパネル（デバックデータ削除ボタン付き） */
+function showDebugPanel() {
+  if (document.getElementById('debugPanel')) return; // 既に表示中
+  const panel = document.createElement('div');
+  panel.id = 'debugPanel';
+  panel.className = 'panel';
+  panel.innerHTML = `
+    <div class="panel-header" style="background:linear-gradient(90deg,rgba(224,80,80,0.18) 0%,transparent 100%);color:var(--red);">
+      <span class="icon">🛠</span>デバックモード
+      <span style="margin-left:8px;font-size:9px;color:var(--text-dim);font-weight:400;letter-spacing:1px;">ADMIN ONLY</span>
+    </div>
+    <div class="panel-body">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div style="font-size:12px;color:var(--text-dim);flex:1;">
+          デバックデータ（🛠フラグ付き）が <strong style="color:var(--text)">${battles.filter(b=>b._debug).length}件</strong> 登録されています
+        </div>
+        <button class="btn btn-red btn-sm" onclick="clearDebugData()">🗑 デバックデータ削除</button>
+        <button class="btn btn-ghost btn-sm" onclick="closeDebugPanel()">✕ パネルを閉じる</button>
+      </div>
+    </div>`;
+  // データ管理パネルの前に挿入
+  const exportPanel = document.querySelector('.app-body .panel:last-child');
+  document.querySelector('.app-body').insertBefore(panel, exportPanel);
+}
+
+function clearDebugData() {
+  const before = battles.length;
+  battles = battles.filter(b => !b._debug);
+  saveBattleLS();
+  renderLog();
+  updateStats();
+  renderOppHistory();
+  closeDebugPanel();
+  toast(`🛑 デバックデータ ${before - battles.length}件を削除しました`);
+}
+
+function closeDebugPanel() {
+  const p = document.getElementById('debugPanel');
+  if (p) p.remove();
+}
+
+function renderDeckChips() {
+  const c = document.getElementById('deckChips');
+  c.innerHTML = decks.map(d =>
+    `<span class="chip" onclick="selectDeck('${esc(d)}')">${esc(d)}</span>`
+  ).join('');
+  updateSelectedChip();
+}
+
+function selectDeck(name) {
+  document.getElementById('myDeckSelect').value = name;
+  updateSelectedChip();
+}
+
+function updateSelectedChip() {
+  const val = document.getElementById('myDeckSelect').value;
+  document.querySelectorAll('.deck-chips .chip').forEach(c => {
+    c.classList.toggle('selected', c.textContent === val);
+  });
+}
+
+function populateDeckSelects() {
+  ['myDeckSelect','filterDeck'].forEach(id => {
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    sel.innerHTML = id === 'myDeckSelect'
+      ? '<option value="">-- 選択 --</option>'
+      : '<option value="">全デッキ</option>';
+    decks.forEach(d => {
+      const o = document.createElement('option');
+      o.value = o.textContent = d;
+      sel.appendChild(o);
+    });
+    sel.value = cur;
+  });
+}
+
+/* ========================================================
+   フォーム
+   ======================================================== */
+function setTurn(t) {
+  selTurn = t;
+  document.getElementById('btnFirst') .classList.toggle('selected', t==='first');
+  document.getElementById('btnSecond').classList.toggle('selected', t==='second');
+  // ビジュアル強調
+  document.getElementById('btnFirst') .style.opacity = t==='first'  ? '1' : '0.5';
+  document.getElementById('btnSecond').style.opacity = t==='second' ? '1' : '0.5';
+}
+
+function setResult(r) {
+  selResult = r;
+  ['win','loss','draw'].forEach(k => {
+    document.getElementById('btn'+k.charAt(0).toUpperCase()+k.slice(1)).style.opacity = k===r ? '1' : '0.5';
+  });
+}
+
+function resetForm() {
+  document.getElementById('oppDeckInput').value = '';
+  document.getElementById('oppSubInput').value  = '';
+  document.getElementById('memoInput').value    = '';
+  selTurn = null; selResult = null;
+  selOppSubs = [];
+  renderSubTags();
+  ['btnFirst','btnSecond','btnWin','btnLoss','btnDraw'].forEach(id => {
+    document.getElementById(id).style.opacity = '1';
+    document.getElementById(id).classList.remove('selected');
+  });
+}
+
+/* ========================================================
+   相手デッキ履歴ショートカット
+   ======================================================== */
+function renderOppHistory() {
+  // メインテーマ履歴（重複除去、最新12件）
+  const mains = [...new Set(battles.map(b => b.oppDeck).filter(Boolean))].slice(-12);
+  // フルデッキ文字列（メイン＋サブ）の履歴（重複除去、最新8件）
+  const fulls = [...new Map(
+    battles
+      .filter(b => b.oppDeck && b.oppSubs && b.oppSubs.length)
+      .map(b => [b.oppDeck + '|' + b.oppSubs.join(','), b])
+  ).values()].slice(-8);
+
+  const c = document.getElementById('oppHistory');
+  if (!mains.length) {
+    c.innerHTML = '<span style="color:var(--text-dim);font-size:11px;">履歴なし</span>';
+    return;
+  }
+  // メインテーマチップ
+  const mainChips = mains.map(d =>
+    `<span class="sc-chip" onclick="fillOppMain('${esc(d)}')">${esc(d)}</span>`
+  ).join('');
+  // サブ付きフルチップ — data属性でシングルクォート問題を回避
+  const fullChips = fulls.map((b, i) => {
+    const label = esc(b.oppDeck) + '<small style="opacity:.7"> ＋' + b.oppSubs.map(esc).join('・') + '</small>';
+    return `<span class="sc-chip sc-chip-full" data-full-idx="${i}">${label}</span>`;
+  }).join('');
+
+  c.innerHTML = mainChips + (fullChips ? '<span class="sc-sep">｜</span>' + fullChips : '');
+
+  // fulls を closure で持ちイベント登録
+  c.querySelectorAll('[data-full-idx]').forEach(el => {
+    const b = fulls[parseInt(el.dataset.fullIdx)];
+    el.addEventListener('click', () => fillOppFull(b.oppDeck, b.oppSubs));
+  });
+}
+
+function fillOppMain(name) {
+  document.getElementById('oppDeckInput').value = name;
+  document.getElementById('oppSubInput').value  = '';
+}
+
+function fillOppFull(main, subs) {
+  document.getElementById('oppDeckInput').value = main;
+  selOppSubs = Array.isArray(subs) ? [...subs] : [];
+  renderSubTags();
+}
+
+/* ── サブテーマ入力 ── */
+function addSubTheme() {
+  const v = document.getElementById('oppSubInput').value.trim();
+  if (!v) return;
+  if (selOppSubs.includes(v)) { toast('既に追加済みです'); return; }
+  selOppSubs.push(v);
+  renderSubTags();
+  document.getElementById('oppSubInput').value = '';
+}
+
+function removeSubTheme(i) {
+  selOppSubs.splice(i, 1);
+  renderSubTags();
+}
+
+function renderSubTags() {
+  const c = document.getElementById('subTags');
+  c.innerHTML = selOppSubs.map((s, i) =>
+    `<span class="sub-tag">${esc(s)}<button class="sub-tag-del" onclick="removeSubTheme(${i})">×</button></span>`
+  ).join('');
+}
+
+// Enterキーでサブテーマ追加 & メインテーマサジェスト
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('oppSubInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); addSubTheme(); }
+  });
+  const mainInput  = document.getElementById('oppDeckInput');
+  const suggestBox = document.getElementById('oppMainSuggest');
+
+  mainInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('oppSubInput').focus(); }
+  });
+
+  mainInput.addEventListener('input', () => {
+    const v = mainInput.value.trim().toLowerCase();
+    const known = [...new Set(battles.map(b => b.oppDeck).filter(Boolean))];
+    const hits = v ? known.filter(d => d.toLowerCase().includes(v) && d.toLowerCase() !== v) : [];
+    if (!hits.length) { suggestBox.classList.remove('open'); return; }
+    suggestBox.innerHTML = hits.map(d =>
+      `<div class="suggest-item" onmousedown="pickSuggest('${esc(d)}')">${esc(d)}</div>`
+    ).join('');
+    suggestBox.classList.add('open');
+  });
+
+  mainInput.addEventListener('blur', () => {
+    setTimeout(() => suggestBox.classList.remove('open'), 150);
+  });
+
+  document.getElementById('editSubInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); editAddSub(); }
+  });
+});
+
+function pickSuggest(name) {
+  document.getElementById('oppDeckInput').value = name;
+  document.getElementById('oppMainSuggest').classList.remove('open');
+  document.getElementById('oppSubInput').focus();
+}
+/* ========================================================
+   記録
+   ======================================================== */
+function recordBattle() {
+  const myDeck  = document.getElementById('myDeckSelect').value;
+  const oppDeck = document.getElementById('oppDeckInput').value.trim();
+  const memo    = document.getElementById('memoInput').value.trim();
+  const rank    = document.getElementById('rankSelect').value;
+
+  if (!myDeck)    { toast('使用デッキを選択してください'); return; }
+  if (!selTurn)   { toast('先手/後手を選択してください'); return; }
+  if (!selResult) { toast('勝敗を選択してください'); return; }
+
+  const now = new Date();
+  const dateStr = `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  battles.push({
+    id: Date.now(), date: dateStr, myDeck, oppDeck,
+    oppSubs: [...selOppSubs],
+    rank, turn: selTurn, result: selResult, memo
+  });
+  saveBattleLS();
+  renderLog();
+  updateStats();
+  renderOppHistory();
+  toast('記録しました！');
+  resetForm();
+}
+
+/* ========================================================
+   ログ描画
+   ======================================================== */
+function getFiltered() {
+  const fd = document.getElementById('filterDeck').value;
+  const fk = document.getElementById('filterRank').value;
+  const fr = document.getElementById('filterResult').value;
+  const ft = document.getElementById('filterTurn').value;
+  return battles.filter(b =>
+    (!fd || b.myDeck === fd) &&
+    (!fk || b.rank   === fk) &&
+    (!fr || b.result === fr) &&
+    (!ft || b.turn   === ft)
+  );
+}
+
+function renderLog() {
+  refreshFilterRank();
+  const list = getFiltered().slice().reverse();
+  const tb = document.getElementById('logTableBody');
+  if (!list.length) {
+    tb.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">⚔️</div><div class="empty-text">対戦記録がありません</div></div></td></tr>`;
+    return;
+  }
+  const total = battles.length;
+  tb.innerHTML = list.map((b) => {
+    const no = total - battles.indexOf(b);
+    const rCls = b.result==='win' ? 'result-win' : b.result==='loss' ? 'result-loss' : 'result-draw';
+    const rTxt = b.result==='win' ? '勝' : b.result==='loss' ? '負' : '分';
+    const tTxt = b.turn==='first' ? '先' : '後';
+    const rankTxt = b.rank || '-';
+    // ランク帯の上位ほど金色系で色付け
+    const rankIdx = RANKS.indexOf(b.rank);
+    const rankCls = rankIdx >= 26 ? 'rank-master'
+                  : rankIdx >= 21 ? 'rank-diamond'
+                  : rankIdx >= 16 ? 'rank-platinum'
+                  : rankIdx >= 11 ? 'rank-gold'
+                  : '';
+    return `<tr>
+      <td>${no}</td>
+      <td>${b.date}</td>
+      <td class="td-left">${esc(b.myDeck)}</td>
+      <td class="td-left">
+        ${b.oppDeck ? `<span class="opp-main-text">${esc(b.oppDeck)}</span>` : '-'}
+        ${b.oppSubs && b.oppSubs.length
+          ? `<span class="opp-subs-text">＋${b.oppSubs.map(esc).join('・')}</span>`
+          : ''}
+      </td>
+      <td class="${rankCls}">${esc(rankTxt)}</td>
+      <td>${tTxt}</td>
+      <td class="${rCls}">${rTxt}</td>
+      <td class="td-left" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;">${esc(b.memo||'')}</td>
+      <td><div class="action-cell">
+        <button class="edit-btn edit" onclick="openEditModal(${b.id})">編集</button>
+        <button class="edit-btn del"  onclick="deleteBattle(${b.id})">削除</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function deleteBattle(id) {
+  if (!confirm('この記録を削除しますか？')) return;
+  battles = battles.filter(b => b.id !== id);
+  saveBattleLS();
+  renderLog();
+  updateStats();
+  renderOppHistory();
+}
+
+/* ========================================================
+   編集モーダル
+   ======================================================== */
+let editId      = null;
+let editTurn    = null;
+let editResult  = null;
+let editSubs    = [];
+
+function openEditModal(id) {
+  const b = battles.find(x => x.id === id);
+  if (!b) return;
+  editId     = id;
+  editTurn   = b.turn;
+  editResult = b.result;
+  editSubs   = b.oppSubs ? [...b.oppSubs] : [];
+
+  // 使用デッキセレクト
+  const myDeckSel = document.getElementById('editMyDeck');
+  myDeckSel.innerHTML = decks.map(d =>
+    `<option value="${esc(d)}"${d === b.myDeck ? ' selected' : ''}>${esc(d)}</option>`
+  ).join('');
+
+  // ランクセレクト
+  const rankSel = document.getElementById('editRank');
+  rankSel.innerHTML = [...RANKS].reverse().map(r =>
+    `<option value="${r}"${r === b.rank ? ' selected' : ''}>${r}</option>`
+  ).join('');
+
+  document.getElementById('editOppDeck').value = b.oppDeck || '';
+  document.getElementById('editMemo').value    = b.memo    || '';
+  document.getElementById('editSubInput').value = '';
+
+  editRenderSubTags();
+  editRenderTurn();
+  editRenderResult();
+
+  document.getElementById('editModalOverlay').classList.add('open');
+}
+
+function closeEditModal(e) {
+  if (e && e.target !== document.getElementById('editModalOverlay')) return;
+  document.getElementById('editModalOverlay').classList.remove('open');
+  editId = null;
+}
+
+function editSetTurn(t) { editTurn = t; editRenderTurn(); }
+function editSetResult(r) { editResult = r; editRenderResult(); }
+
+function editRenderTurn() {
+  document.getElementById('editBtnFirst') .className = 'modal-btn' + (editTurn === 'first'  ? ' active-first'  : '');
+  document.getElementById('editBtnSecond').className = 'modal-btn' + (editTurn === 'second' ? ' active-second' : '');
+}
+function editRenderResult() {
+  document.getElementById('editBtnWin') .className = 'modal-btn' + (editResult === 'win'  ? ' active-win'  : '');
+  document.getElementById('editBtnLoss').className = 'modal-btn' + (editResult === 'loss' ? ' active-loss' : '');
+  document.getElementById('editBtnDraw').className = 'modal-btn' + (editResult === 'draw' ? ' active-draw' : '');
+}
+
+function editAddSub() {
+  const v = document.getElementById('editSubInput').value.trim();
+  if (!v) return;
+  if (editSubs.includes(v)) { toast('既に追加済みです'); return; }
+  editSubs.push(v);
+  editRenderSubTags();
+  document.getElementById('editSubInput').value = '';
+}
+function editRemoveSub(i) { editSubs.splice(i, 1); editRenderSubTags(); }
+function editRenderSubTags() {
+  document.getElementById('editSubTags').innerHTML = editSubs.map((s, i) =>
+    `<span class="sub-tag">${esc(s)}<button class="sub-tag-del" onclick="editRemoveSub(${i})">×</button></span>`
+  ).join('');
+}
+
+function saveEdit() {
+  if (!editId) return;
+  const idx = battles.findIndex(x => x.id === editId);
+  if (idx === -1) return;
+  const myDeck = document.getElementById('editMyDeck').value;
+  if (!myDeck) { toast('使用デッキを選択してください'); return; }
+  if (!editTurn)   { toast('先手/後手を選択してください'); return; }
+  if (!editResult) { toast('勝敗を選択してください'); return; }
+
+  battles[idx] = {
+    ...battles[idx],
+    myDeck,
+    oppDeck: document.getElementById('editOppDeck').value.trim(),
+    oppSubs: [...editSubs],
+    rank:    document.getElementById('editRank').value,
+    turn:    editTurn,
+    result:  editResult,
+    memo:    document.getElementById('editMemo').value.trim(),
+  };
+  saveBattleLS();
+  renderLog();
+  updateStats();
+  renderOppHistory();
+  document.getElementById('editModalOverlay').classList.remove('open');
+  editId = null;
+  toast('編集を保存しました');
+}
+
+// Enterキーでサブ追加（モーダル内）
+
+function clearFilters() {
+  ['filterDeck','filterRank','filterResult','filterTurn'].forEach(id => document.getElementById(id).value = '');
+  renderLog();
+}
+
+/* ========================================================
+   統計
+   ======================================================== */
+let statMode = 'main'; // 'main' | 'detail'
+
+function setStatMode(mode) {
+  statMode = mode;
+  document.getElementById('tabMain')  .classList.toggle('active', mode === 'main');
+  document.getElementById('tabDetail').classList.toggle('active', mode === 'detail');
+  updateStats();
+}
+
+/* ランク絞り込みセレクト初期化 */
+function populateStatRankFilter() {
+  refreshStatRankFilter();
+}
+
+/* 現在の絞り込み対象バトル一覧を返す */
+function getStatBattles() {
+  const rank = document.getElementById('statRankFilter').value;
+  return rank ? battles.filter(b => b.rank === rank) : battles;
+}
+
+function updateStats() {
+  refreshStatRankFilter();
+  const src   = getStatBattles();
+  const total = src.length;
+  const wins  = src.filter(b => b.result === 'win').length;
+  const loss  = src.filter(b => b.result === 'loss').length;
+  const draw  = src.filter(b => b.result === 'draw').length;
+  const rate  = total ? Math.round(wins / total * 100) : null;
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statWin').textContent   = wins;
+  document.getElementById('statLoss').textContent  = loss;
+  document.getElementById('statDraw').textContent  = draw;
+  document.getElementById('statRate').textContent  = rate !== null ? rate + '%' : '-';
+
+  renderOppStats();
+}
+
+/* ── 相手デッキ別集計テーブル ── */
+function renderOppStats() {
+  const tb    = document.getElementById('oppStatsBody');
+  const label = document.getElementById('oppStatsLabel');
+  const count = document.getElementById('oppStatsCount');
+  const src   = getStatBattles();
+
+  if (!src.length) {
+    tb.innerHTML = `<tr><td colspan="6"><div class="empty-state" style="padding:16px"><div class="empty-text">データなし</div></div></td></tr>`;
+    count.textContent = '';
+    return;
+  }
+
+  function getKey(b) {
+    if (statMode === 'main') {
+      return b.oppDeck || '不明';
+    } else {
+      const base = b.oppDeck || '不明';
+      const subs = b.oppSubs && b.oppSubs.length ? b.oppSubs.slice().sort().join('・') : '';
+      return subs ? `${base}／${subs}` : base;
+    }
+  }
+
+  const map = new Map();
+  src.forEach(b => {
+    const key = getKey(b);
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        mainName: b.oppDeck || '不明',
+        subNames: b.oppSubs && b.oppSubs.length ? b.oppSubs : [],
+        total: 0, win: 0, loss: 0, draw: 0,
+        first: 0, firstWin: 0,
+        second: 0, secondWin: 0,
+      });
+    }
+    const e = map.get(key);
+    e.total++;
+    if (b.result === 'win')  e.win++;
+    if (b.result === 'loss') e.loss++;
+    if (b.result === 'draw') e.draw++;
+    if (b.turn === 'first')  { e.first++;  if (b.result === 'win') e.firstWin++;  }
+    if (b.turn === 'second') { e.second++; if (b.result === 'win') e.secondWin++; }
+  });
+
+  const sorted = [...map.values()].sort((a, b) => b.total - a.total);
+
+  label.textContent = statMode === 'main' ? '相手デッキ（メイン）別' : '相手デッキ（詳細）別';
+  count.textContent = `${sorted.length} 種類`;
+
+  function turnTxt(wins, total) {
+    if (!total) return '-';
+    const losses = total - wins; // 引き分けも負けに含む（先手勝ち-先手負けの表示）
+    const cls = wins > losses ? 'wr-high' : wins < losses ? 'wr-low' : 'wr-mid';
+    return `<span class="${cls}">${wins}-${total - wins}</span>`;
+  }
+
+  tb.innerHTML = sorted.map(e => {
+    const wr     = e.total ? Math.round(e.win / e.total * 100) : null;
+    const wrTxt  = wr !== null ? wr + '%' : '-';
+    const wrCls  = wr === null ? 'wr-mid' : wr >= 60 ? 'wr-high' : wr <= 40 ? 'wr-low' : 'wr-mid';
+    const nameCell = statMode === 'detail' && e.subNames.length
+      ? `<span class="opp-stat-name">${esc(e.mainName)}</span><span class="opp-stat-sub">＋${e.subNames.map(esc).join('・')}</span>`
+      : `<span class="opp-stat-name">${esc(e.mainName)}</span>`;
+
+    return `<tr>
+      <td class="td-left">${nameCell}</td>
+      <td>${e.total}</td>
+      <td style="color:var(--win);font-weight:700;">${e.win}</td>
+      <td style="color:var(--loss);font-weight:700;">${e.loss}</td>
+      <td class="${wrCls}">${wrTxt}</td>
+      <td>${turnTxt(e.firstWin,  e.first)}</td>
+      <td>${turnTxt(e.secondWin, e.second)}</td>
+    </tr>`;
+  }).join('');
+
+  // デッキ分布ドーナツも同じ src / sorted で描画
+  renderDeckDist(src, sorted);
+}
+
+/* ── 相手デッキ分布：ドーナツチャート ── */
+const DIST_PALETTE = [
+  '#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFD93D',
+  '#C77DFF','#74C69D','#F4A261','#80B3FF','#FF8FAB',
+  '#56CFE1','#FFCA3A','#B5EAD7','#FF9F9B','#ADE8F4',
+];
+
+function renderDeckDist(src, sorted) {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+  if (distChart) { distChart.destroy(); distChart = null; }
+
+  // 中央ラベルをランク表示に更新
+  const selRank = document.getElementById('statRankFilter').value;
+  const cRank   = document.getElementById('distCenterRank');
+  cRank.textContent = selRank || '全体';
+
+  if (!src.length || !sorted.length) return;
+
+  const TOP    = 10;
+  const shown  = sorted.slice(0, TOP);
+  const othCnt = sorted.slice(TOP).reduce((s, e) => s + e.total, 0);
+  const total  = src.length;
+
+  const labels = shown.map(e =>
+    statMode === 'detail' && e.subNames.length
+      ? e.mainName + '＋' + e.subNames.join('・')
+      : e.mainName
+  );
+  const data   = shown.map(e => e.total);
+  const colors = shown.map((_, i) => DIST_PALETTE[i % DIST_PALETTE.length]);
+
+  if (othCnt > 0) {
+    labels.push('その他');
+    data.push(othCnt);
+    colors.push(isDark ? '#555' : '#bbb');
+  }
+
+  const textColor = isDark ? '#c8d4f0' : '#333a50';
+
+  // ラベルを最大6文字で折り返す（長い場合は2行に分割）
+  function wrapLabel(lbl) {
+    if (lbl.length <= 7) return lbl;
+    // 「＋」で分割できる場合は優先
+    const plusIdx = lbl.indexOf('＋');
+    if (plusIdx > 0 && plusIdx <= 9) {
+      return lbl.slice(0, plusIdx) + '\n' + lbl.slice(plusIdx);
+    }
+    // それ以外は7文字で折り返し
+    return lbl.slice(0, 7) + '\n' + lbl.slice(7, 13) + (lbl.length > 13 ? '…' : '');
+  }
+
+  const ctx = document.getElementById('distChart').getContext('2d');
+  distChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: colors,
+        borderWidth: 3,
+        borderColor: isDark ? '#111522' : '#ffffff',
+        hoverBorderWidth: 4,
+      }]
+    },
+    options: {
+      cutout: '50%',
+      layout: { padding: 80 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const pct = total ? Math.round(ctx.parsed / total * 100) : 0;
+              return ` ${ctx.label}：${ctx.parsed}戦 (${pct}%)`;
+            }
+          }
+        },
+        datalabels: {
+          display: (ctx) => {
+            const pct = total ? ctx.dataset.data[ctx.dataIndex] / total : 0;
+            return pct >= 0.04;
+          },
+          color: textColor,
+          font: { size: 10, weight: '700' },
+          anchor: 'end',
+          align: 'end',
+          offset: 6,
+          formatter: (value, ctx) => {
+            const lbl = ctx.chart.data.labels[ctx.dataIndex];
+            const pct = total ? Math.round(value / total * 100) : 0;
+            return wrapLabel(lbl) + '\n' + pct + '%';
+          },
+          textAlign: 'center',
+          lineHeight: 1.35,
+        }
+      }
+    },
+    plugins: [ChartDataLabels]
+  });
+}
+
+function rebuildChart() {
+  // テーマ切替時はフル再描画
+  updateStats();
+}
+
+/* 円グラフ中央クリックでランクをサイクル */
+function cycleChartRank() {
+  const sel    = document.getElementById('statRankFilter');
+  const opts   = [...sel.options].map(o => o.value); // '' + 登録済みランク
+  const curIdx = opts.indexOf(sel.value);
+  const next   = (curIdx + 1) % opts.length;
+  sel.value    = opts[next];
+  updateStats();
+}
+
+/* ========================================================
+   ズーム
+   ======================================================== */
+function applyZoom(v) {
+  const scale = v / 100;
+  document.getElementById('zoomTargetWrapper').style.transform = `scale(${scale})`;
+}
+
+/* ========================================================
+   データ管理
+   ======================================================== */
+function exportJSON() {
+  const data = JSON.stringify({ decks, battles }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a'); a.href = url; a.download = 'mdlog.json'; a.click();
+  URL.revokeObjectURL(url);
+  toast('JSONを保存しました');
+}
+
+function importJSON() { document.getElementById('importFile').click(); }
+
+function loadJSONFile(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.decks)   decks   = data.decks;
+      if (data.battles) battles = data.battles;
+      saveDeckLS(); saveBattleLS();
+      renderDeckChips(); populateDeckSelects();
+      renderLog(); updateStats(); renderOppHistory();
+      toast('読み込みました！');
+    } catch { toast('読み込みエラー'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function exportCSV() {
+  const header = '番号,日付,使用デッキ,相手デッキ,先後,結果,メモ\n';
+  const rows = battles.map((b,i) =>
+    [i+1, b.date, b.myDeck, b.oppDeck||'', b.turn==='first'?'先':'後',
+     b.result==='win'?'勝':b.result==='loss'?'負':'分', b.memo||''].join(',')
+  ).join('\n');
+  const blob = new Blob(['\uFEFF'+header+rows], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'mdlog.csv'; a.click();
+  URL.revokeObjectURL(url);
+  toast('CSVを出力しました');
+}
+
+function clearAll() {
+  if (!confirm('全データを削除しますか？この操作は元に戻せません。')) return;
+  battles = []; saveBattleLS();
+  renderLog(); updateStats(); renderOppHistory();
+  toast('全データを削除しました');
+}
+
+/* ========================================================
+   ユーティリティ
+   ======================================================== */
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ========================================================
+   初期化
+   ======================================================== */
+applyTheme(currentTheme);
+populateRankSelects();
+populateStatRankFilter();
+renderDeckChips();
+populateDeckSelects();
+renderLog();
+updateStats();
+renderOppHistory();
+</script>
+</body>
+</html>
